@@ -547,11 +547,9 @@ var browser = (function (util, proxies, sanedomparsererror, theWindow) {
             var zoom = options.zoom || 1,
                 iframe;
 
-            if(options.onlyElement === true) {
-                iframe = createIframeWithSizeAtZoomLevel1(options.pageWidth, options.pageHeight, 1);
-            } else {
-                iframe = createIframeWithSizeAtZoomLevel1(options.width, options.height, zoom);
-            }
+
+            // iframe = createIframeWithSizeAtZoomLevel1(options.width, options.height, zoom);
+            iframe = createIframeWithSizeAtZoomLevel1(1000, 1000, 1);
             // We need to add the element to the document so that its content gets loaded
             theWindow.document.getElementsByTagName("body")[0].appendChild(iframe);
 
@@ -562,21 +560,62 @@ var browser = (function (util, proxies, sanedomparsererror, theWindow) {
                 try {
                     size = calculateContentSize(findCorrelatingElement(element, doc), options.clip, options.width, options.height, zoom);
 
-                    if(options.onlyElement === true) {
-                        var rect = options.selectorFn(doc).getBoundingClientRect();
-                        size.pageWidth = options.pageWidth;
-                        size.pageHeight = options.pageHeight;
-                        size.elementWidth = rect.width;
-                        size.elementHeight = rect.height;
-                        size.elementTop = rect.top;
-                        size.elementLeft = rect.left;
-                    }
+                    // size.height = 2000;
+                    // size.width = 2000;
+                    // size.viewportHeight = size.height;
+                    // size.viewportWidth = size.width;
+                    // console.debug(iframe.contentDocument.getElementById("main-content-right"));
+                    // const rect = iframe.contentDocument.getElementById("main-content-right").getBoundingClientRect();
+
+                    // size.viewportHeight = rect.height;
+                    // size.viewportWidth = rect.width;
+                    // size.height = size.viewportHeight;
+                    // size.width = size.viewportWidth;
+                    // size.left = rect.left;
+                    // size.top = rect.top;
+
+                    console.debug("RECT")
+                    let rect = element.getBoundingClientRect();
+                    console.debug(rect.top);
+                    console.debug(rect.left);
+                    console.debug(rect.width);
+                    console.debug(rect.height);
+
+                    rect = element.ownerDocument.getElementById("main-content-right").getBoundingClientRect();
+                    console.debug(rect.left)
+                    console.debug(rect.top)
+                    console.debug(rect.width)
+                    console.debug(rect.height)
+
+                    rect = findCorrelatingElement(element, doc).getBoundingClientRect();
+                    console.debug(rect.top);
+                    console.debug(rect.left);
+                    console.debug(rect.width);
+                    console.debug(rect.height);
+
+                    rect = findCorrelatingElement(element, doc).ownerDocument.getElementById("main-content-right").getBoundingClientRect();
+                    console.debug(rect.top);
+                    console.debug(rect.left);
+                    console.debug(rect.width);
+                    console.debug(rect.height);
+
+
+
+                    console.debug({...size})
+                    // const e = findCorrelatingElement(element, doc);
+                    // console.debug(e.getBoundingClientRect().width)
+                    // console.debug(e.getBoundingClientRect().height)
+                    // console.debug(e.getBoundingClientRect().top)
+                    // console.debug(e.getBoundingClientRect().left)
+                    // console.debug(e.getBoundingClientRect().x)
+                    // console.debug(e.getBoundingClientRect().y)
 
                     resolve(size);
                 } catch (e) {
                     reject(e);
                 } finally {
-                    theWindow.document.getElementsByTagName("body")[0].removeChild(iframe);
+                    console.debug(iframe);
+                    // theWindow.document.getElementsByTagName("body")[0].removeChild(iframe);
                 }
             };
 
@@ -849,24 +888,15 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
 
     var module = {};
 
-    var svgAttributes = function (size, zoom, onlyElement) {
+    var svgAttributes = function (size, zoom) {
         var zoomFactor = zoom || 1;
 
-        var attributes;
-        if(onlyElement === true) {
-            attributes = {
-                'width': size.elementWidth,
-                'height': size.elementHeight,
-                'font-size': size.rootFontSize,
-                'viewBox': `${size.elementLeft} ${size.elementTop} ${size.elementWidth} ${size.elementHeight}`
-            };
-        } else {
-            attributes = {
-                width: size.width,
-                height: size.height,
-                'font-size': size.rootFontSize
-            };
-        }
+        var attributes = {
+            width: 689,
+            height: 1000,
+            'font-size': size.rootFontSize,
+            viewBox: `${150} ${0} ${689} ${680}`
+        };
 
         if (zoomFactor !== 1) {
             attributes.style = 'transform:scale(' + zoomFactor + '); transform-origin: 0 0;';
@@ -875,16 +905,7 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         return attributes;
     };
 
-    var foreignObjectAttributes = function (size, onlyElement) {
-        if(onlyElement === true) {
-            return {
-                'x': 0,
-                'y': 0,
-                'width': size.pageWidth,
-                'height': size.pageHeight,
-            };
-        }
-
+    var foreignObjectAttributes = function (size) {
         var closestScaledWith, closestScaledHeight,
             offsetX, offsetY;
 
@@ -931,18 +952,18 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         }).join(' ');
     };
 
-    var convertElementToSvg = function (element, size, zoomFactor, onlyElement) {
+    var convertElementToSvg = function (element, size, zoomFactor) {
         var xhtml = xmlserializer.serializeToString(element);
 
         browser.validateXHTML(xhtml);
 
-        var foreignObjectAttrs = foreignObjectAttributes(size, onlyElement);
+        var foreignObjectAttrs = foreignObjectAttributes(size);
         workAroundCollapsingMarginsAcrossSVGElementInWebKitLike(foreignObjectAttrs);
         workAroundSafariSometimesNotShowingExternalResources(foreignObjectAttrs);
 
         return (
             '<svg xmlns="http://www.w3.org/2000/svg"' +
-                serializeAttributes(svgAttributes(size, zoomFactor, onlyElement)) +
+                serializeAttributes(svgAttributes(size, zoomFactor)) +
                 '>' +
                 workAroundChromeShowingScrollbarsUnderLinuxIfHtmlIsOverflowScroll() +
                 '<foreignObject' + serializeAttributes(foreignObjectAttrs) + '>' +
@@ -952,10 +973,10 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         );
     };
 
-    module.getSvgForDocument = function (element, size, zoomFactor, onlyElement) {
+    module.getSvgForDocument = function (element, size, zoomFactor) {
         documentHelper.rewriteTagNameSelectorsToLowerCase(element);
 
-        return convertElementToSvg(element, size, zoomFactor, onlyElement);
+        return convertElementToSvg(element, size, zoomFactor);
     };
 
     module.drawDocumentAsSvg = function (element, options) {
@@ -967,7 +988,7 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
 
         return browser.calculateDocumentContentSize(element, options)
             .then(function (size) {
-                return module.getSvgForDocument(element, size, options.zoom, options.onlyElement);
+                return module.getSvgForDocument(element, size, options.zoom);
             });
     };
 
@@ -1008,6 +1029,7 @@ var rasterize = (function (util, browser, documentHelper, document2svg, svg2imag
     };
 
     var doDraw = function (element, canvas, options) {
+        console.debug(options);
         return document2svg.drawDocumentAsSvg(element, options)
             .then(drawSvgAsImg)
             .then(function (result) {
@@ -1088,19 +1110,13 @@ var rasterizeHTML = (function (util, browser, rasterize) {
         };
     };
 
-    var constructOptions = function (params, onlyElement) {
+    var constructOptions = function (params) {
         var viewport = getViewportSize(params.canvas, params.options),
             options;
 
         options = util.clone(params.options);
         options.width = viewport.width;
         options.height = viewport.height;
-
-        if(onlyElement === true) {
-            var docRect = document.documentElement.getBoundingClientRect();
-            options.pageWidth = docRect.width * 2;
-            options.pageHeight = docRect.height * 2;
-        }
 
         return options;
     };
@@ -1117,18 +1133,6 @@ var rasterizeHTML = (function (util, browser, rasterize) {
         var element = doc.documentElement ? doc.documentElement : doc;
 
         return rasterize.rasterize(element, params.canvas, constructOptions(params));
-    };
-
-    module.drawElement = function () {
-        var doc = arguments[0];
-        var params = {
-            canvas: null,
-            options: { onlyElement: true, selectorFn: arguments[1] }
-        };
-
-        var element = doc.documentElement ? doc.documentElement : doc;
-
-        return rasterize.rasterize(element, params.canvas, constructOptions(params, params.options.onlyElement));
     };
 
     var drawHTML = function (html, canvas, options) {
