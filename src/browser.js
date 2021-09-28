@@ -179,8 +179,11 @@ var browser = (function (util, proxies, sanedomparsererror, theWindow) {
             var zoom = options.zoom || 1,
                 iframe;
 
-
-            iframe = createIframeWithSizeAtZoomLevel1(options.width, options.height, zoom);
+            if(options.onlyElement === true) {
+                iframe = createIframeWithSizeAtZoomLevel1(options.pageWidth, options.pageHeight, 1);
+            } else {
+                iframe = createIframeWithSizeAtZoomLevel1(options.width, options.height, zoom);
+            }
             // We need to add the element to the document so that its content gets loaded
             theWindow.document.getElementsByTagName("body")[0].appendChild(iframe);
 
@@ -190,6 +193,16 @@ var browser = (function (util, proxies, sanedomparsererror, theWindow) {
 
                 try {
                     size = calculateContentSize(findCorrelatingElement(element, doc), options.clip, options.width, options.height, zoom);
+
+                    if(options.onlyElement === true) {
+                        var rect = options.selectorFn(doc).getBoundingClientRect();
+                        size.pageWidth = options.pageWidth;
+                        size.pageHeight = options.pageHeight;
+                        size.elementWidth = rect.width;
+                        size.elementHeight = rect.height;
+                        size.elementTop = rect.top;
+                        size.elementLeft = rect.left;
+                    }
 
                     resolve(size);
                 } catch (e) {

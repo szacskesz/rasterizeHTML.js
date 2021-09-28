@@ -208,3 +208,22 @@ export function drawURL(url: string, canvas: HTMLCanvasElement, options?: Option
  *    if drawing the provided item failed.
  */
 export function drawDocument(document: Document, canvas: HTMLCanvasElement, options?: Options): Promise<RenderResult>;
+
+/**
+ * Draw an element of the document.
+ * @example
+ * ```
+ * rasterizeHTML.drawElement(document, (doc) => doc.getElementById("#someId"))
+ *     .then(function success(renderResult: RenderResult) {
+ *         ...
+ *     }, function error(e: Error) {
+ *         ...
+ *     })
+ * ```
+ * 
+ * @param document a Document object from the element will be drawn
+ * @param selectorFn a function get retrieve the specified element from the document
+ * @return a promise that is fulfilled once the content is rendered or rejected
+ *    if drawing the provided item failed.
+ */
+export function drawElement(document: Document, selectorFn: (doc: Document) => HTMLElement): Promise<RenderResult>;

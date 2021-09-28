@@ -17,13 +17,19 @@ var rasterizeHTML = (function (util, browser, rasterize) {
         };
     };
 
-    var constructOptions = function (params) {
+    var constructOptions = function (params, onlyElement) {
         var viewport = getViewportSize(params.canvas, params.options),
             options;
 
         options = util.clone(params.options);
         options.width = viewport.width;
         options.height = viewport.height;
+
+        if(onlyElement === true) {
+            var docRect = document.documentElement.getBoundingClientRect();
+            options.pageWidth = docRect.width * 2;
+            options.pageHeight = docRect.height * 2;
+        }
 
         return options;
     };
@@ -40,6 +46,18 @@ var rasterizeHTML = (function (util, browser, rasterize) {
         var element = doc.documentElement ? doc.documentElement : doc;
 
         return rasterize.rasterize(element, params.canvas, constructOptions(params));
+    };
+
+    module.drawElement = function () {
+        var doc = arguments[0];
+        var params = {
+            canvas: null,
+            options: { onlyElement: true, selectorFn: arguments[1] }
+        };
+
+        var element = doc.documentElement ? doc.documentElement : doc;
+
+        return rasterize.rasterize(element, params.canvas, constructOptions(params, params.options.onlyElement));
     };
 
     var drawHTML = function (html, canvas, options) {

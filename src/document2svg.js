@@ -3,14 +3,24 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
 
     var module = {};
 
-    var svgAttributes = function (size, zoom) {
+    var svgAttributes = function (size, zoom, onlyElement) {
         var zoomFactor = zoom || 1;
 
-        var attributes = {
-            width: size.width,
-            height: size.height,
-            'font-size': size.rootFontSize
-        };
+        var attributes;
+        if(onlyElement === true) {
+            attributes = {
+                'width': size.elementWidth,
+                'height': size.elementHeight,
+                'font-size': size.rootFontSize,
+                'viewBox': ""+size.elementLeft+" "+size.elementTop+" "+size.elementWidth+" "+size.elementHeight
+            };
+        } else {
+            attributes = {
+                width: size.width,
+                height: size.height,
+                'font-size': size.rootFontSize
+            };
+        }
 
         if (zoomFactor !== 1) {
             attributes.style = 'transform:scale(' + zoomFactor + '); transform-origin: 0 0;';
@@ -19,7 +29,16 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         return attributes;
     };
 
-    var foreignObjectAttributes = function (size) {
+    var foreignObjectAttributes = function (size, onlyElement) {
+        if(onlyElement === true) {
+            return {
+                'x': 0,
+                'y': 0,
+                'width': size.pageWidth,
+                'height': size.pageHeight,
+            };
+        }
+
         var closestScaledWith, closestScaledHeight,
             offsetX, offsetY;
 
@@ -66,18 +85,18 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         }).join(' ');
     };
 
-    var convertElementToSvg = function (element, size, zoomFactor) {
+    var convertElementToSvg = function (element, size, zoomFactor, onlyElement) {
         var xhtml = xmlserializer.serializeToString(element);
 
         browser.validateXHTML(xhtml);
 
-        var foreignObjectAttrs = foreignObjectAttributes(size);
+        var foreignObjectAttrs = foreignObjectAttributes(size, onlyElement);
         workAroundCollapsingMarginsAcrossSVGElementInWebKitLike(foreignObjectAttrs);
         workAroundSafariSometimesNotShowingExternalResources(foreignObjectAttrs);
 
         return (
             '<svg xmlns="http://www.w3.org/2000/svg"' +
-                serializeAttributes(svgAttributes(size, zoomFactor)) +
+                serializeAttributes(svgAttributes(size, zoomFactor, onlyElement)) +
                 '>' +
                 workAroundChromeShowingScrollbarsUnderLinuxIfHtmlIsOverflowScroll() +
                 '<foreignObject' + serializeAttributes(foreignObjectAttrs) + '>' +
@@ -87,10 +106,10 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
         );
     };
 
-    module.getSvgForDocument = function (element, size, zoomFactor) {
+    module.getSvgForDocument = function (element, size, zoomFactor, onlyElement) {
         documentHelper.rewriteTagNameSelectorsToLowerCase(element);
 
-        return convertElementToSvg(element, size, zoomFactor);
+        return convertElementToSvg(element, size, zoomFactor, onlyElement);
     };
 
     module.drawDocumentAsSvg = function (element, options) {
@@ -102,7 +121,7 @@ var document2svg = (function (util, browser, documentHelper, xmlserializer) {
 
         return browser.calculateDocumentContentSize(element, options)
             .then(function (size) {
-                return module.getSvgForDocument(element, size, options.zoom);
+                return module.getSvgForDocument(element, size, options.zoom, options.onlyElement);
             });
     };
 
